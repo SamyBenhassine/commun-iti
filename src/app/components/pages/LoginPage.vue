@@ -18,10 +18,20 @@ const userNameRegex = /^(\w+)$/i;
 
 const loginFormRules = reactive<FormRules>({
   username: [
-  
+    {
+      required: true,
+      message: "Le pseudo est obligatoire"
+    },
+    {
+      pattern: userNameRegex,
+      message: "Le pseudo ne doit pas contenir de caractères spéciaux ou d'espace"
+    },
   ],
   password: [
-  
+    {
+      required: true,
+      message: "Le mot de passe est obligatoire"
+    },
   ]
 });
 
@@ -32,6 +42,13 @@ async function onSubmit(form?: FormInstance) {
 
   try {
     await form.validate();
+
+    const isAuthenticated = await authService.authenticate(loginModel);
+    if (isAuthenticated) {
+      router.push("/app");
+    } else {
+      ElMessage.error("Échec de l'authentification. Veuillez vérifier vos informations.");
+    }
 
   } catch (e) {
     return;
@@ -50,11 +67,15 @@ async function onSubmit(form?: FormInstance) {
           :rules="loginFormRules"
           label-position="top"
           class="login-form"
-          @submit.prevent=""
+          @submit.prevent="onSubmit($refs.form)"
         >
-          <el-form-item label="Pseudo" prop="username"> </el-form-item>
+          <el-form-item label="Pseudo" prop="username" >
+            <el-input v-model="loginModel.username" />  
+          </el-form-item>
 
-          <el-form-item label="Mot de passe" prop="password"> </el-form-item>
+          <el-form-item label="Mot de passe" prop="password"> 
+            <el-input v-model="loginModel.password" type="password" />
+          </el-form-item>
 
           <el-form-item>
             <div class="form-actions">

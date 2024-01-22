@@ -38,7 +38,7 @@ const registerFormRules = reactive<FormRules>({
   passwordConfirmation: [
     {
       required: true,
-      message: "Mot de passe obligatoire"
+      message: "Confirmation du mot de passe obligatoire"
     },
   ]
 });
@@ -48,11 +48,7 @@ async function onSubmit(form?: FormInstance) {
     return;
   }
   try {
-    await form.validate().then(async valid => {
-      if (!valid) {
-        return ;
-      }
-      else {
+    await form.validate();
         if (form.$props.model?.password !== form.$props.model?.passwordConfirmation) {
           ElMessage.error( "Les mots de passe ne sont pas les mêmes");
           return;
@@ -76,8 +72,6 @@ async function onSubmit(form?: FormInstance) {
         .catch(() => {
           ElMessage.error( "Une erreur est survenue lors de l'inscription du compte");
         });
-      }
-    });
   } catch (e) {
     return;
   }
