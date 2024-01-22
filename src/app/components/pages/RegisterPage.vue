@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { ElMessage, ElMessageBox } from "element-plus";
+import { ElMessage } from "element-plus";
 import { reactive } from "vue";
 import { useRouter } from "vue-router";
 import { UserAPI } from "@/modules/user/services";
-import { AuthenticationService } from "@/modules/authentication/services";
 import { useProvider } from "@/app/platform";
 import type { FormRules, FormInstance } from "element-plus";
+import type { UserRegistrationModel } from "@/modules/user/models";
 
-const [userApi, authService] = useProvider([UserAPI, AuthenticationService]);
+const [userApi] = useProvider([UserAPI]);
 const router = useRouter();
 
 const registerModel = reactive({
@@ -26,20 +26,20 @@ const registerFormRules = reactive<FormRules>({
     },
     {
       pattern: userNameRegex,
-      message: "Le pseudo doit contenir uniquement des caractères alphanumériques."
-    }
+      message: "Le pseudo doit correspondre a la regex"
+    },
   ],
   password: [
     {
       required: true,
       message: "Mot de passe obligatoire"
-    }
+    },
   ],
   passwordConfirmation: [
     {
       required: true,
-      message: "Confirmation du mot de passe obligatoire"
-    }
+      message: "Mot de passe obligatoire"
+    },
   ]
 });
 
@@ -47,29 +47,42 @@ async function onSubmit(form?: FormInstance) {
   if (!form) {
     return;
   }
-
   try {
-    await form.validate();
-
-    if (registerModel.password !== registerModel.passwordConfirmation) {
-      ElMessage.error("La confirmation du mot de passe ne correspond pas au mot de passe.");
-      return;
-    }
-
-    const userExists = await userApi.checkUserExists(registerModel.username);
-    if (userExists) {
-      ElMessageBox.alert("L'utilisateur avec ce pseudo existe déjà.", "Erreur");
-      return;
-    }
-
-    await userApi.registerUser(registerModel);
-    router.push("/login");
+    await form.validate().then(async valid => {
+      if (!valid) {
+        return ;
+      }
+      else {
+        if (form.$props.model?.password !== form.$props.model?.passwordConfirmation) {
+          ElMessage.error( "Les mots de passe ne sont pas les mêmes");
+          return;
+        }
+        const usernameExists = await userApi.exists(form.$props.model?.username);
+        if (usernameExists) {
+          ElMessage.error( "Le nom d'utilisateur est déjà existant");
+          return;
+        }
+        const registrationData: UserRegistrationModel = {
+          username: form.$props.model?.username,
+          password: form.$props.model?.password,
+        };
+        userApi.register(registrationData).then(() => {
+          ElMessage({
+            message: 'Votre compte a bien été créé',
+            type: 'success',
+          });
+          router.push('/login');
+        })
+        .catch(() => {
+          ElMessage.error( "Une erreur est survenue lors de l'inscription du compte");
+        });
+      }
+    });
   } catch (e) {
     return;
   }
 }
 </script>
-
 <template>
   <div class="register center-children full-h">
     <main class="width-s">
@@ -92,13 +105,14 @@ async function onSubmit(form?: FormInstance) {
             <el-input v-model="registerModel.password" type="password" />
           </el-form-item>
 
-          <el-form-item label="Confirmez votre mot de passe" prop="passwordConfirmation">
-            <el-input v-model="registerModel.passwordConfirmation" type="password" />
+          <el-form-item label="Confirmez le mot de passe" prop="passwordConfirmation">
+            <el-input v-model="registerModel.passwordConfirmation" type="password"/>
           </el-form-item>
 
           <el-form-item>
             <div class="form-actions">
               <el-button type="primary" native-type="submit"> Créer mon compte </el-button>
+
               <router-link to="/login">J'ai déjà un compte</router-link>
             </div>
           </el-form-item>
@@ -107,7 +121,6 @@ async function onSubmit(form?: FormInstance) {
     </main>
   </div>
 </template>
-
 <style scoped lang="scss">
 @use "@/app/styles/var";
 @use "@/app/styles/mixins";
