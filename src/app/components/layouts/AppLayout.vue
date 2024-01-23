@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { RouterView } from "vue-router";
+import RoomView from "@/app/components/pages/RoomView.vue";
 import LeftMenu from "@/app/components/domain/menu/LeftMenu.vue";
 import RightMenu from "@/app/components/domain/menu/RightMenu.vue";
 import MessageInput from "@/app/components/domain/message/MessageInput.vue";
@@ -23,7 +25,7 @@ if (authState.token?.bearer) {
 
     <main>
       <main>
-        <!-- TODO -->
+        <router-view />
       </main>
 
       <footer>

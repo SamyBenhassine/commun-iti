@@ -16,7 +16,7 @@ const state = useState(MessageStore);
 const authState = useState(AuthenticationStore);
 const store = useStore(MessageStore);
 
-const [messageSerivce, messageSocket, roomSocket] = useProvider([
+const [messageService, messageSocket, roomSocket] = useProvider([
   MessageService,
   MessageSocketService,
   RoomSocketService
@@ -35,14 +35,13 @@ const root = ref<HTMLDivElement | null>(null);
 
 subscribeToIncomingMessage();
 
-
 watch(
   () => props.room,
   async () => {
     /**
      * Each time the room changes, fetch messages and subscribe to new messages
      */
-    
+
     store.reset();
     await fetchMore();
 
@@ -51,7 +50,9 @@ watch(
 );
 
 function subscribeToIncomingMessage() {
-  // TODO
+  messageSocket.onNewMessage(props.room.id, () =>
+    ElNotification({ message: "Vous avez reçu un nouveau message", type: "info" })
+  );
 }
 
 async function fetchMore() {
@@ -62,7 +63,7 @@ async function fetchMore() {
   try {
     loading.value = true;
 
-    // TODO fetch more messages
+    await messageService.fetchMore(props.room.id);
   } catch (e) {
     console.error(e);
   } finally {
@@ -74,6 +75,7 @@ async function fetchMore() {
 <template>
   <div class="room stretch-wh" ref="root">
     <div class="room-container" ref="container">
+      <Message v-for="mess in store.state.currentRoomMessages" :key="mess.id" :message="mess" />
       <div ref="top"></div>
     </div>
   </div>

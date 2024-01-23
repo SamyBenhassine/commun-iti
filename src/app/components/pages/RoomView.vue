@@ -4,7 +4,7 @@ import RoomHeader from "@/app/components/domain/room/RoomHeader.vue";
 import { useProvider, useState, useStore } from "@/app/platform";
 import { RoomAPI } from "@/modules/room/services";
 import { RoomStore } from "@/modules/room/store";
-import { watch } from "vue";
+import { watch, onMounted } from "vue";
 import { useRoute } from "vue-router";
 
 const state = useState(RoomStore);
@@ -12,22 +12,22 @@ const route = useRoute();
 const roomStore = useStore(RoomStore);
 const [roomApi] = useProvider([RoomAPI]);
 
-watch(
-  () => route.params.roomId as string,
-  async (roomId: string) => {
-    if (roomStore.state.currentRoom?.id !== roomId) {
-      const room = await roomApi.findById(roomId);
+const fetchRoomById = async (roomId: string) => {
+  if (roomStore.state.currentRoom?.id !== roomId) {
+    const room = await roomApi.findById(roomId);
 
-      if (room) {
-        roomStore.setCurrentRoom(room);
-        return true;
-      } else {
-        return { path: "/app" };
-      }
+    if (room) {
+      roomStore.setCurrentRoom(room);
+    } else {
+      return { path: "/app" };
     }
   }
-);
+};
+
+watch(() => route.params.roomId as string, fetchRoomById);
+
 </script>
+
 <template>
   <section class="room-view stretch-wh">
     <header>
@@ -39,6 +39,7 @@ watch(
     </main>
   </section>
 </template>
+
 <style lang="scss" scoped>
 @use "@/app/styles/var";
 
@@ -49,6 +50,7 @@ watch(
   > header {
     height: var.$layout-top-menu-height;
   }
+
   > main {
     flex: 1;
     max-height: calc(100vh - (var.$layout-top-menu-height + var.$layout-footer-height));

@@ -69,7 +69,8 @@ async function onSubmit(form?: FormInstance) {
           });
           router.push('/login');
         })
-        .catch(() => {
+        .catch((e) => {
+          console.log("erreur :" + e);
           ElMessage.error( "Une erreur est survenue lors de l'inscription du compte");
         });
   } catch (e) {

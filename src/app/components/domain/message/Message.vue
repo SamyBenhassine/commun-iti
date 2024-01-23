@@ -8,17 +8,23 @@ import { useProvider } from "@/app/platform";
 import { MessageService } from "@/modules/message/services/MessageService";
 import { DateTime } from "luxon";
 import MessageReactions, { type MessageReaction } from "./MessageReactions.vue";
-import { type Message } from "@/modules/message/models/domain";
+import { type EmojiReaction, type Message } from "@/modules/message/models/domain";
 
 const props = defineProps<{
   message: Message;
 }>();
 
-const [messageSerivce] = useProvider([MessageService]);
+const [messageService] = useProvider([MessageService]);
 
 function onEmojiPicked(emoji: string) {
+  if (emoji) {
+    messageService.reactTo(emoji, props.message);
+  }
 }
 
+function removeEmoji(emoji: EmojiReaction) {
+  messageService.removeReaction(emoji.emoji, props.message);
+}
 </script>
 
 <template>
@@ -28,13 +34,23 @@ function onEmojiPicked(emoji: string) {
       <el-button :icon="EmojiIcon" circle size="small" @click="$refs.emojiPicker.show()" />
     </div>
 
-    <bg-image class="message-user-photo" src="" />
+    <bg-image class="message-user-photo" :src="props.message.author.pictureUrl" />
 
     <div class="message-content">
       <div class="message-title">
-        <small class="message-date"></small>
+        <span> {{ props.message.author.username + " " }} </span>
+        <small class="message-date">
+          {{ props.message.creationDate.getDate() }}
+          {{ props.message.creationDate.toLocaleString("default", { month: "long" }) }}
+          {{ props.message.creationDate.getFullYear() }}
+        </small>
+        <RichText :text="props.message.text" />
       </div>
-
+      <MessageAttachements
+        v-show="props.message.attachements.length > 0"
+        :attachements="props.message.attachements"
+      />
+      <message-reactions :reactions="props.message.reactions" @reactionClick="removeEmoji" />
     </div>
   </div>
 </template>

@@ -3,14 +3,27 @@ import { MessageService } from "@/modules/message/services/MessageService";
 import { useProvider, useState } from "@/app/platform";
 import { RoomStore } from "@/modules/room/store";
 import type { RichText } from "@/modules/message/models/domain";
+import RichTextEditor from '../../ui/RichTextEditor.vue';
+import type { NewMessage } from "@/modules/message/models/NewMessage";
 
 const [messageService] = useProvider([MessageService]);
 const roomState = useState(RoomStore);
 
+function sendMessage(richTextContent: RichText) {
+
+  if (richTextContent && roomState.currentRoom) {
+    const newMessage: NewMessage = {
+      roomId: roomState.currentRoom.id,
+      text: richTextContent
+    };
+    messageService.sendMessage(newMessage);
+  }
+}
+
 </script>
 <template>
   <div class="message-input stretch-wh">
-    
+    <rich-text-editor @input="sendMessage" />
   </div>
 </template>
 <style lang="scss" scoped>
