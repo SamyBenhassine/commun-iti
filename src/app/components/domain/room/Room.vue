@@ -34,6 +34,9 @@ const container = ref<HTMLDivElement | null>(null);
 const root = ref<HTMLDivElement | null>(null);
 
 subscribeToIncomingMessage();
+subscribeToJoinRoom();
+subscribeToQuitRoom();
+subscribeToIncomingReaction();
 
 watch(
   () => props.room,
@@ -46,13 +49,78 @@ watch(
     await fetchMore();
 
     subscribeToIncomingMessage();
+    subscribeToJoinRoom();
+    subscribeToQuitRoom();
+    subscribeToIncomingReaction();
   }
 );
 
 function subscribeToIncomingMessage() {
-  messageSocket.onNewMessage(props.room.id, () =>
-    ElNotification({ message: "Vous avez reçu un nouveau message", type: "info" })
-  );
+  messageSocket.onNewMessage(props.room.id, () => {
+    messageService.reloadMessages();
+  });
+}
+
+function subscribeToJoinRoom() {
+  roomSocket.onRoomJoined((reaction) => {
+    if (reaction.user.id !== authState.loggedUser?.id) {
+      const oldNotifs = localStorage.getItem("iti.notifications");
+      const newNotif = {
+        message: `${reaction.user.username} a rejoint le salon`,
+        type: "info"
+      };
+      localStorage.setItem(
+        "iti.notifications",
+        JSON.stringify(newNotif) + JSON.stringify(oldNotifs)
+      );
+      ElNotification({
+        message: `${reaction.user.username} a rejoint le salon`,
+        type: "info"
+      });
+    }
+  });
+}
+
+function subscribeToQuitRoom() {
+  roomSocket.onRoomLeft((reaction) => {
+    if (reaction.user.id !== authState.loggedUser?.id) {
+      const oldNotifs = localStorage.getItem("iti.notifications");
+      const newNotif = {
+        message: `${reaction.user.username} a quitté le salon`,
+        type: "info"
+      };
+      localStorage.setItem(
+        "iti.notifications",
+        JSON.stringify(newNotif) + JSON.stringify(oldNotifs)
+      );
+      ElNotification({
+        message: `${reaction.user.username} a quitté le salon`,
+        type: "info"
+      });
+    }
+  });
+}
+
+function subscribeToIncomingReaction() {
+  messageSocket.onNewReaction((reaction) => {
+    if (reaction.user.id !== authState.loggedUser?.id) {
+      const notifs = JSON.parse(localStorage.getItem("iti.notifications") || "{}");
+      const newNotif = {
+        message: `${reaction.user.username} a réagi à votre message ${reaction.emoji}`,
+        type: "info"
+      };
+      let concatNotifs = JSON.stringify([newNotif]);
+      if (notifs) {
+        concatNotifs = JSON.stringify([newNotif, notifs]);
+      }
+
+      localStorage.setItem("iti.notifications", concatNotifs);
+      ElNotification({
+        message: `${reaction.user.username} a réagi à votre message ${reaction.emoji}`,
+        type: "info"
+      });
+    }
+  });
 }
 
 async function fetchMore() {
